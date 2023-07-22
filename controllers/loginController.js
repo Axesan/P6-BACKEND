@@ -5,10 +5,21 @@ const joi  = require('joi')
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
+
+function decodedToken(tokenUserId){
+    const secretKey = process.env.TOKEN_USER; // Assurez-vous d'utiliser la même clé secrète utilisée pour signer le tokenUserId
+    const decodedToken = jwt.verify(tokenUserId, secretKey);
+    const userId = decodedToken.userId;
+    console.log('ID de l\'utilisateur :', userId);
+    return userId;
+}
+
 const userSchema = new mongoose.Schema({
   email: { type: String, unique: true },
   password: String
 });
+
+
 
 // Ajout d'une méthode pour hacher le mot de passe avant de sauvegarder l'utilisateur
 userSchema.pre('save', function (next) {
@@ -79,10 +90,7 @@ async function signup(req, res) {
     }
   });
 }
-
-  
-
-
+ 
 async function login(req, res) {
     const { password, email } = req.body;
     const User = mongoose.model('User', userSchema);
@@ -91,33 +99,36 @@ async function login(req, res) {
       // Recherche de l'utilisateur par adresse e-mail
       const user = await User.findOne({ email });
       if (!user) {
-        return res.status(401).send('Adresse e-mail ou mot de passe invalide.');
+        return res.status(401).json({error:'Adresse e-mail ou mot de passe invalide.'});
       }
   
       if (!password) {
-        return res.status(401).send('Mot de passe requis.');
+        return res.status(401).json({error:'Mot de passe requis.'});
       }
   
       if (!email) {
-        return res.status(401).send('Email requis.');
+        return res.status(401).json({error:'Email requis.'});
       }
   
       // Comparaison du mot de passe fourni avec le mot de passe haché stocké dans la base de données
       const passwordMatch = await bcrypt.compare(password, user.password);
+
       if (!passwordMatch) {
-        return res.status(401).send('Adresse e-mail ou mot de passe invalide.');
+        return res.status(401).json({error:'Adresse e-mail ou mot de passe invalide.'});
       }
   
       // Génération du jeton JWT avec l'ID de l'utilisateur comme payload
       const token = jwt.sign({ userId: user._id }, process.env.TOKEN_USER);
+      const decode = decodedToken(token)
+      console.log('TOKEN DECODE //',decode);
   
       // Connexion réussie
-      res.status(200).json({ token, userId: user._id });
+      res.status(200).json({ userId: user._id,token });
     } catch (error) {
       console.error(error);
       res.status(500).send('Erreur serveur.');
     }
-  }
+}
   
 
 

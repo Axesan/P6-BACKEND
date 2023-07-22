@@ -8,12 +8,7 @@ require('dotenv').config()
 const app = express();
 const port = 3000;
 
-app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin',"http://localhost:4200"); // Remplacez cette URL par l'URL de votre application frontend
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  next();
-});
+
 // Inclure les routes
 const routes = require("./routes/routing");
 // Configuration de notre conenxion a la
@@ -24,7 +19,12 @@ app.use(morgan("tiny", { stream: winston.stream.write }));
 
 // Données au format JSON
 app.use(express.json());
-
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin',"http://localhost:4200"); // Remplacez cette URL par l'URL de votre application frontend
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  next();
+});
 // Utilisation de nos routes en ajoutant "api" pour chaque routes
 app.use("/api",routes);
 
