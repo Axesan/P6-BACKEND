@@ -6,7 +6,7 @@ const databaseURL = process.env.DATABASE_URL_MONGO;
 // Options de configuration de Mongoose à revoir
 const mongooseOptions = {
     useNewUrlParser: true,
-    useUnifiedTopology: true,
+    useUnifiedTopology: true, 
   };
   
   // A mettre dans un fichier config
@@ -14,7 +14,7 @@ const mongooseOptions = {
     try {
       await mongoose.connect(databaseURL, mongooseOptions);
       console.log("Connexion à la base de données établie avec succès!");
-    } catch (error) {
+    } catch (error) { 
       console.error("Erreur de connexion à la base de données:", error.message);
     }
   }

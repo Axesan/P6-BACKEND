@@ -118,12 +118,12 @@ async function login(req, res) {
       }
   
       // Génération du jeton JWT avec l'ID de l'utilisateur comme payload
-      const token = jwt.sign({ userId: user._id }, process.env.TOKEN_USER);
-      const decode = decodedToken(token)
-      console.log('TOKEN DECODE //',decode);
+      const token = jwt.sign({ userId: user._id }, process.env.TOKEN_USER, { expiresIn: '4h' });
+    
+ 
   
       // Connexion réussie
-      res.status(200).json({ userId: user._id,token });
+      res.status(200).json({ userId: user._id, token });
     } catch (error) {
       console.error(error);
       res.status(500).send('Erreur serveur.');

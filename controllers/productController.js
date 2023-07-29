@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const multer = require('multer');
 const jwt = require('jsonwebtoken');
 const verifToken = require('../configs/verifToken');
+const Sauce = require('../models/Product')
 
 
 
@@ -14,26 +15,6 @@ function decodedToken(tokenUserId){
   return userId;
 }
 
-
-// Définition du schéma pour la collection sauces
-const sauceSchema = new mongoose.Schema({
-  userId: { type: String, required: true },
-  name: { type: String, required: true },
-  manufacturer: { type: String, required: true },
-  description: { type: String, required: true },
-  mainPepper: { type: String, required: true },
-  imageUrl: { type: String, required: true },
-  heat: { type: Number, required: true },
-  likes: { type: Number, default: 0 },
-  dislikes: { type: Number, default: 0 },
-  usersLiked: { type: [String], default: [] },
-  usersDisliked: { type: [String], default: [] }
-});
-
-// Création du modèle basé sur le schéma
-const Sauce = mongoose.model('sauces', sauceSchema);
-
-
 // function methode get
 async function sauces(req, res) {
     try {
@@ -44,7 +25,8 @@ async function sauces(req, res) {
       console.error(err);
       res.status(500).send('Erreur serveur');
     }
-  }
+}
+
 // Function by id
 async function saucesById(req, res) {
     const sauceId = req.params.id;
@@ -66,75 +48,135 @@ async function saucesById(req, res) {
     }
 }
 
-
-// Configuration de multer pour gérer l'upload de l'image
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-      cb(null, 'uploads/');
-    },
-    filename: function (req, file, cb) {
-      cb(null, Date.now() + '-' + file.originalname);
-    }
-  });
-  
- 
-
-// Function method Post - A review
-function addSauces(req,res) {
-  
-  
-    const { name, manufacturer, description, mainPepper, heat,image } = req.body;
-    
-    const upload = multer({ storage: storage });
-    // const token = req.headers.authorization;
-    const token = req.headers.authorization.split(' ')[1]
-    const userId = decodedToken(token);
-    // console.log("Recuperer token: " + token);
-    console.log("TOKEN ID: " + userId );
-    console.log("Product //", name, manufacturer, description, mainPepper, heat,image);
-
-    // Vérification des champs obligatoires
-    if (!name || !manufacturer || !description || !mainPepper || !heat) {
-      return res.status(400).json({error:'Veuillez fournir tous les champs obligatoires.'});
-    }
-
-  
-    // Création d'une nouvelle instance de Sauce avec les données fournies
+// Function method Post
+async function addSauces(req, res) {
+    // Récupérer les données de la sauce depuis le corps de la requête
+    const sauceData = req.body.sauce;
+    console.log("SAUCEDATA::",req);
+    // ID de l'utilisateur
+    const token = req.headers.authorization.split(' ')[1]; 
+    const decodedToken = jwt.verify(token, process.env.TOKEN_USER);
+    const userId = decodedToken.userId;
+    console.log(decodedToken);
+    // Créer une nouvelle instance de Sauce en utilisant le modèle Mongoose
     const newSauce = new Sauce({
-      userId: userId, // Remplacer par l'ID de l'utilisateur réel
-      name: name,
-      manufacturer: manufacturer,
-      description: description,
-      mainPepper: mainPepper,
-      heat: heat,
-      imageUrl: `assets/images/${imageUrl}`, // Chemin de l'image téléchargée
-      likes: 0,
-      dislikes: 0,
-      usersLiked: [""],
-      usersDisliked: [""]
+      userId: userId,
+      name: sauceData.name,
+      manufacturer: sauceData.manufacturer,
+      description: sauceData.description,
+      mainPepper: sauceData.mainPepper,
+      imageUrl: sauceData.imageUrl,
+      heat: sauceData.heat,
+      likes: 0, // Nouvelle sauce, donc initialiser les likes à 0
+      dislikes: 0, // Nouvelle sauce, donc initialiser les dislikes à 0
+      usersLiked: [""], // Nouvelle sauce, donc initialiser les usersLiked à un tableau vide
+      usersDisliked: [""] // Nouvelle sauce, donc initialiser les usersDisliked à un tableau vide
     });
-    console.log("REQ ::",req);
-    
   
-    // Enregistrement de la nouvelle sauce dans la base de données
-    newSauce.save()
+    // Enregistrer la nouvelle sauce dans la base de données
+   await newSauce.save()
       .then((savedSauce) => {
-        res.send(JSON.parse(savedSauce));
+        // Renvoyer une réponse réussie avec un statut 201 et un message
+        return res.status(201).json({ message: "Sauce added successfully", sauce: savedSauce });
       })
-      .catch((err) => {
-        console.error(err);
-        res.status(500).send('Erreur lors de l\'enregistrement de la sauce');
+      .catch((error) => {
+        console.error(error);
+        return res.status(500).json({ error: "Internal server error" });
       });
 }
+
+
 
 // function Method PUT
 function updateSauce(req,res) {
     
 }
 // function Method delete
-function deleteSauce(req,res) {}
+function deleteSauce(req,res) {
 
-function likeSauces(req,res) {}
+    const sauceId = req.params.id;
+  
+    // Use the Sauce model to find the sauce by its id and delete it
+    Sauce.findByIdAndRemove(sauceId)
+      .then((deletedSauce) => {
+        if (!deletedSauce) {
+          // If the sauce with the given id was not found
+          return res.status(404).json({ error: "Sauce not found" });
+        }
+        // If the sauce was deleted successfully
+        return res.status(200).json({ message: "Sauce deleted successfully" });
+      })
+      .catch((error) => {
+        // If there was an error during the deletion process
+        console.error(error);
+        return res.status(500).json({ error: "Internal server error" });
+      });
+  }
+  
+  
+  
+
+
+async function likeSauces(req,res) {
+  try {
+    const sauceId = req.params.id;
+
+    // ID de l'utilisateur
+    const token = req.headers.authorization.split(' ')[1]; 
+    const decodedToken = jwt.verify(token, process.env.TOKEN_USER);
+    const userId = decodedToken.userId; // Remplacez '12345' par l'ID de l'utilisateur qui like la sauce (vous devrez récupérer l'ID de l'utilisateur à partir de l'authentification)
+
+    // Recherche de la sauce dans la base de données
+    const sauce = await Sauce.findById(sauceId);
+
+    if (!sauce) {
+      return res.status(404).json({ message: 'Sauce not found' });
+    }
+
+    // Vérification si l'utilisateur a déjà liké ou disliké la sauce
+    const alreadyLiked = sauce.usersLiked.includes(userId);
+    const alreadyDisliked = sauce.usersDisliked.includes(userId);
+
+    // Traitement du like/dislike en fonction de la valeur de req.body.like
+    if (req.body.like === 1) {
+      if (alreadyLiked) {
+        // Si l'utilisateur a déjà liké la sauce, il souhaite retirer son like
+        sauce.likes -= 1;
+        sauce.usersLiked = sauce.usersLiked.filter(id => id !== userId);
+      } else {
+        // Sinon, il ajoute son like
+        sauce.likes += 1;
+        sauce.usersLiked.push(userId);
+      }
+    } else if (req.body.like === -1) {
+      if (alreadyDisliked) {
+        // Si l'utilisateur a déjà disliké la sauce, il souhaite retirer son dislike
+        sauce.dislikes -= 1;
+        sauce.usersDisliked = sauce.usersDisliked.filter(id => id !== userId);
+      } else {
+        // Sinon, il ajoute son dislike
+        sauce.dislikes += 1;
+        sauce.usersDisliked.push(userId);
+      }
+    } else if (req.body.like === 0) {
+      // Si req.body.like vaut 0, cela signifie que l'utilisateur souhaite retirer son like ou son dislike
+      if (alreadyLiked) {
+        sauce.likes -= 1;
+        sauce.usersLiked = sauce.usersLiked.filter(id => id !== userId);
+      } else if (alreadyDisliked) {
+        sauce.dislikes -= 1;
+        sauce.usersDisliked = sauce.usersDisliked.filter(id => id !== userId);
+      }
+    }
+    // Sauvegarde des modifications dans la base de données
+    await sauce.save();
+
+    return res.status(200).json({ message: 'Action performed successfully' });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+}
 
 module.exports = {
     sauces,saucesById,addSauces,updateSauce,deleteSauce,likeSauces
