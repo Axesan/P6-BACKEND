@@ -5,6 +5,7 @@ const morgan = require("morgan");
 const bodyParser = require('body-parser');
 const expressListEndpoints = require("express-list-endpoints");
 require('dotenv').config()
+var cors = require('cors')
 
 const app = express();
 const port = 3000;
@@ -17,7 +18,7 @@ const config = require('./configs/connectDatabase');
 // Middleware pour enregistrer les requêtes HTTP
 app.use(morgan("tiny", { stream: winston.stream.write }));
 
-// Données au format JSON
+
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', "http://localhost:4200"); // Remplacez cette URL par l'URL de votre application frontend
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
@@ -25,7 +26,11 @@ app.use((req, res, next) => {
   next();
 });
 
-// Mettre en place le body Parse pour analyser le corps des requêtes en JSON
+
+// Affiche nos images 
+app.use('/images', express.static('images'));
+
+// Données au format JSON
 app.use(express.json());
 
 // Utilisation de nos routes en ajoutant "api" pour chaque route

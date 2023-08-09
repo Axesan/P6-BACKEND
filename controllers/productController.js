@@ -5,7 +5,7 @@ const jwt = require('jsonwebtoken');
 const verifToken = require('../configs/verifToken');
 const Sauce = require('../models/Product')
 
-
+const fs = require('fs');
 
 function decodedToken(tokenUserId){
   const secretKey = process.env.TOKEN_USER; // Assurez-vous d'utiliser la même clé secrète utilisée pour signer le tokenUserId
@@ -51,13 +51,12 @@ async function saucesById(req, res) {
 // Function method Post
 async function addSauces(req, res) {
     // Récupérer les données de la sauce depuis le corps de la requête
-    const sauceData = req.body.sauce;
-    console.log("SAUCEDATA::",req);
+    const sauceData = JSON.parse(req.body.sauce);
     // ID de l'utilisateur
     const token = req.headers.authorization.split(' ')[1]; 
     const decodedToken = jwt.verify(token, process.env.TOKEN_USER);
     const userId = decodedToken.userId;
-    console.log(decodedToken);
+   
     // Créer une nouvelle instance de Sauce en utilisant le modèle Mongoose
     const newSauce = new Sauce({
       userId: userId,
@@ -65,12 +64,12 @@ async function addSauces(req, res) {
       manufacturer: sauceData.manufacturer,
       description: sauceData.description,
       mainPepper: sauceData.mainPepper,
-      imageUrl: sauceData.imageUrl,
+      imageUrl:`${req.protocol}://${req.get('host')}/images/${req.file.filename}`,
       heat: sauceData.heat,
       likes: 0, // Nouvelle sauce, donc initialiser les likes à 0
       dislikes: 0, // Nouvelle sauce, donc initialiser les dislikes à 0
-      usersLiked: [""], // Nouvelle sauce, donc initialiser les usersLiked à un tableau vide
-      usersDisliked: [""] // Nouvelle sauce, donc initialiser les usersDisliked à un tableau vide
+      usersLiked: [], // Nouvelle sauce, donc initialiser les usersLiked à un tableau vide
+      usersDisliked: [] // Nouvelle sauce, donc initialiser les usersDisliked à un tableau vide
     });
   
     // Enregistrer la nouvelle sauce dans la base de données
@@ -88,34 +87,73 @@ async function addSauces(req, res) {
 
 
 // function Method PUT
-function updateSauce(req,res) {
-    
-}
-// function Method delete
-function deleteSauce(req,res) {
+// Function Method PUT
+async function updateSauce(req, res) {
+  try {
+    // Si on modifie le fichier image, récupérer le nom du fichier image sauce actuelle et suppression
+    // pour éviter d'avoir un fichier inutile dans le dossier images
+    if (req.file) {
+      const sauce = await Sauce.findOne({ _id: req.params.id });
 
-    const sauceId = req.params.id;
-  
-    // Use the Sauce model to find the sauce by its id and delete it
-    Sauce.findByIdAndRemove(sauceId)
-      .then((deletedSauce) => {
-        if (!deletedSauce) {
-          // If the sauce with the given id was not found
-          return res.status(404).json({ error: "Sauce not found" });
-        }
-        // If the sauce was deleted successfully
-        return res.status(200).json({ message: "Sauce deleted successfully" });
-      })
-      .catch((error) => {
-        // If there was an error during the deletion process
-        console.error(error);
-        return res.status(500).json({ error: "Internal server error" });
-      });
+      if (sauce) {
+        const filename = sauce.imageUrl.split("/images")[1];
+        // Suppression de l'image de la sauce car elle va être remplacée par la nouvelle image de sauce
+        // unlink du package fs qui supprime notre fichier 
+        fs.unlink(`images/${filename}`, (err) => {
+          if (err) throw err;
+        });
+      }
+    }
+
+    // L'objet qui va être envoyé dans la base de données
+    let sauceObject;
+    // Vérification de req.file (Si l'iimage est modifier)
+    if (req.file) {
+      sauceObject = {
+        ...JSON.parse(req.body.sauce),
+        imageUrl: `${req.protocol}://${req.get("host")}/images/${req.file.filename}`,
+      };
+    } else {
+      sauceObject = { ...req.body };
+    }
+    // La mise a jour.
+    await Sauce.updateOne({ _id: req.params.id }, { ...sauceObject, _id: req.params.id });
+
+    res.status(200).json({ message: "Sauce modifiée" });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
   }
-  
-  
-  
+}
 
+
+
+
+// function Method delete
+function deleteSauce(req, res) {
+  Sauce.findOne({ _id: req.params.id })
+    .then((sauce) => {
+      if (!sauce) {
+        // If the sauce with the given id was not found
+        return res.status(404).json({ error: "Sauce not found" });
+      }
+
+      const filename = sauce.imageUrl.split("/images/")[1]; // On récupère avec la méthode split le nom ficher image dans l'URL
+
+      fs.unlink(`images/${filename}`, (error) => {
+        if (error) {
+          console.error(error);
+          return res.status(500).json({ error: "Failed to delete image" });
+        }
+
+        Sauce.deleteOne({ _id: req.params.id })
+          .then(() => res.status(200).json({ message: "Sauce supprimée" }))
+          .catch((error) => res.status(400).json({ error }));
+      });
+    })
+    .catch((error) => res.status(500).json({ error }));
+}
+
+// Function like and dislike. 
 
 async function likeSauces(req,res) {
   try {
