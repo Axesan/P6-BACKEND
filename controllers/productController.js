@@ -1,21 +1,9 @@
-const configs = require('../configs/connectDatabase')
-const mongoose = require('mongoose');
-const multer = require('multer');
 const jwt = require('jsonwebtoken');
-const verifToken = require('../configs/verifToken');
 const Sauce = require('../models/Product')
-
 const fs = require('fs');
 
-function decodedToken(tokenUserId){
-  const secretKey = process.env.TOKEN_USER; // Assurez-vous d'utiliser la même clé secrète utilisée pour signer le tokenUserId
-  const decodedToken = jwt.verify(tokenUserId, secretKey);
-  const userId = decodedToken.userId;
-  console.log('ID de l\'utilisateur :', userId);
-  return userId;
-}
 
-// function methode get
+// Function methode get
 async function sauces(req, res) {
     try {
     // Récupération de toutes les sauces à l'aide du modèle Sauce
@@ -29,17 +17,15 @@ async function sauces(req, res) {
 
 // Function by id
 async function saucesById(req, res) {
+
     const sauceId = req.params.id;
-  
     try {
       // Recherche de la sauce par ID à l'aide du modèle Sauce
       const sauce = await Sauce.findById(sauceId).exec();
-  
       if (!sauce) {
         // Si la sauce n'est pas trouvée, renvoie une réponse avec un statut 404 (Non trouvé)
         return res.status(404).send('Sauce non trouvée');
       }
-  
       // Envoi des informations de la sauce dans la réponse
       res.send(sauce);
     } catch (err) {
@@ -84,9 +70,6 @@ async function addSauces(req, res) {
       });
 }
 
-
-
-// function Method PUT
 // Function Method PUT
 async function updateSauce(req, res) {
   try {
@@ -107,7 +90,7 @@ async function updateSauce(req, res) {
 
     // L'objet qui va être envoyé dans la base de données
     let sauceObject;
-    // Vérification de req.file (Si l'iimage est modifier)
+    // Vérification de req.file (Si l'image est modifier)
     if (req.file) {
       sauceObject = {
         ...JSON.parse(req.body.sauce),
@@ -125,10 +108,7 @@ async function updateSauce(req, res) {
   }
 }
 
-
-
-
-// function Method delete
+// Function Method delete
 function deleteSauce(req, res) {
   Sauce.findOne({ _id: req.params.id })
     .then((sauce) => {
@@ -154,7 +134,6 @@ function deleteSauce(req, res) {
 }
 
 // Function like and dislike. 
-
 async function likeSauces(req,res) {
   try {
     const sauceId = req.params.id;
@@ -162,7 +141,7 @@ async function likeSauces(req,res) {
     // ID de l'utilisateur
     const token = req.headers.authorization.split(' ')[1]; 
     const decodedToken = jwt.verify(token, process.env.TOKEN_USER);
-    const userId = decodedToken.userId; // Remplacez '12345' par l'ID de l'utilisateur qui like la sauce (vous devrez récupérer l'ID de l'utilisateur à partir de l'authentification)
+    const userId = decodedToken.userId;
 
     // Recherche de la sauce dans la base de données
     const sauce = await Sauce.findById(sauceId);
@@ -209,7 +188,7 @@ async function likeSauces(req,res) {
     // Sauvegarde des modifications dans la base de données
     await sauce.save();
 
-    return res.status(200).json({ message: 'Action performed successfully' });
+    return res.status(200).json({ message: 'Like OKEY !' });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ message: 'Internal server error' });

@@ -5,7 +5,7 @@ const morgan = require("morgan");
 const bodyParser = require('body-parser');
 const expressListEndpoints = require("express-list-endpoints");
 require('dotenv').config()
-var cors = require('cors')
+
 
 const app = express();
 const port = 3000;
@@ -20,7 +20,7 @@ app.use(morgan("tiny", { stream: winston.stream.write }));
 
 
 app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', "http://localhost:4200"); // Remplacez cette URL par l'URL de votre application frontend
+  res.setHeader('Access-Control-Allow-Origin', "http://localhost:4200"); 
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   next();

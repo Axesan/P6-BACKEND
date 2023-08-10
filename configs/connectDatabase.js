@@ -10,9 +10,9 @@ const mongooseOptions = {
   };
   
   // A mettre dans un fichier config
-  async function connectToDatabase() {
+  function connectToDatabase() {
     try {
-      await mongoose.connect(databaseURL, mongooseOptions);
+      mongoose.connect(databaseURL, mongooseOptions);
       console.log("Connexion à la base de données établie avec succès!");
     } catch (error) { 
       console.error("Erreur de connexion à la base de données:", error.message);
