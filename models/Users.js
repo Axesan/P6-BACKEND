@@ -8,8 +8,6 @@ const utilisateurSchema = mongoose.Schema({
   password: { type: String, required: true }
 });
 
-utilisateurSchema.plugin(uniqueValidator);
-utilisateurSchema.plugin(MongooseErrors);
 
 // Ajout d'une méthode pour hacher le mot de passe avant de sauvegarder l'utilisateur
 utilisateurSchema.pre('save', function (next) {
@@ -28,4 +26,8 @@ utilisateurSchema.pre('save', function (next) {
     next();
   });
 });
+
+
+utilisateurSchema.plugin(uniqueValidator);
+utilisateurSchema.plugin(MongooseErrors);
 module.exports = mongoose.model('User', utilisateurSchema);

@@ -32,6 +32,7 @@ app.use('/images', express.static('images'));
 
 // Données au format JSON
 app.use(express.json());
+app.use(bodyParser.json());
 
 // Utilisation de nos routes en ajoutant "api" pour chaque route
 app.use("/api", routes);
