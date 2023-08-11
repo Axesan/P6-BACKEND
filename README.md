@@ -1,5 +1,16 @@
 # PIIQUANTE
-## Architecture
+Usage:
 
-- Folders containn routes 
-    - routes/**routing.js**
+Please run in terminal:
+* $ npm i 
+
+Create folder for read picture :
+
+* images
+
+Run in terminal : 
+
+* $ npm start
+
+Enjoy ! 
+
