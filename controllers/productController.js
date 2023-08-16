@@ -117,7 +117,7 @@ async function updateSauce(req, res) {
         (req.body.description && !isStringWithNoNumbers(req.body.description)) ||
         (req.body.mainPepper && !isStringWithNoNumbers(req.body.mainPepper))
       ) {
-        return res.status(400).json({ error: 'Invalid input for text fields' });
+        return res.status(400).json({ message: 'Veuillez entrez une chaine de caractére' });
       }
 
     // L'objet qui va être envoyé dans la base de données
