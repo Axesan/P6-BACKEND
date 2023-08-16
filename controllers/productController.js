@@ -37,61 +37,63 @@ async function saucesById(req, res) {
 
 // Fonction pour vérifier une chaîne de caractères sans entiers
 function isStringWithNoNumbers(inputString) {
-  return /^[^\d]+$/.test(inputString);
+  return /^[^\d.]+$/.test(inputString);
 }
-
 // ...
 
 
-// Function method Post
-async function addSauces(req, res) {
-    // Récupérer les données de la sauce depuis le corps de la requête
-    const sauceData = JSON.parse(req.body.sauce);
-    // ID de l'utilisateur
-    const token = req.headers.authorization.split(' ')[1]; 
-    const decodedToken = jwt.verify(token, process.env.TOKEN_USER);
-    const userId = decodedToken.userId;
+  // Function method Post
 
-    
- // Vérification des champs sans entier - MAJ - Soutenance
- if (
-  !isStringWithNoNumbers(sauceData.name) ||
-  !isStringWithNoNumbers(sauceData.manufacturer) ||
-  !isStringWithNoNumbers(sauceData.description) ||
-  !isStringWithNoNumbers(sauceData.mainPepper)
-) {
-  return res.status(400).json({ message: 'Veuillez entrez une chaine de caractére' });
-}
- 
-   
-    // Créer une nouvelle instance de Sauce en utilisant le modèle Mongoose
-    const newSauce = new Sauce({
+async function addSauces(req, res) {
+  // Récupérer les données de la sauce depuis le corps de la requête
+  const sauceData = JSON.parse(req.body.sauce);
+  // ID de l'utilisateur
+  const token = req.headers.authorization.split(' ')[1]; 
+  const decodedToken = jwt.verify(token, process.env.TOKEN_USER);
+  const userId = decodedToken.userId;
+
+  // Vérification des champs sans entier
+  if (
+      !isStringWithNoNumbers(sauceData.name) ||
+      !isStringWithNoNumbers(sauceData.manufacturer) ||
+      !isStringWithNoNumbers(sauceData.description) ||
+      !isStringWithNoNumbers(sauceData.mainPepper)
+  ) {
+      // Supprimer le fichier image en cas d'erreur de validation génerer
+      fs.unlinkSync(`images/${req.file.filename}`);
+      return res.status(400).json({ message: 'Veuillez entrer une chaîne de caractères' });
+  }
+
+  // Créer une nouvelle instance de Sauce en utilisant le modèle Mongoose
+  const newSauce = new Sauce({
       userId: userId,
       name: sauceData.name,
       manufacturer: sauceData.manufacturer,
       description: sauceData.description,
       mainPepper: sauceData.mainPepper,
-      imageUrl:`${req.protocol}://${req.get('host')}/images/${req.file.filename}`,
+      imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`,
       heat: sauceData.heat,
       likes: 0, // Nouvelle sauce, donc initialiser les likes à 0
       dislikes: 0, // Nouvelle sauce, donc initialiser les dislikes à 0
       usersLiked: [], // Nouvelle sauce, donc initialiser les usersLiked à un tableau vide
       usersDisliked: [] // Nouvelle sauce, donc initialiser les usersDisliked à un tableau vide
-    });
+  });
 
-
-  
-    // Enregistrer la nouvelle sauce dans la base de données
-   await newSauce.save()
+  // Enregistrer la nouvelle sauce dans la base de données
+  await newSauce
+      .save()
       .then((savedSauce) => {
-        // Renvoyer une réponse réussie avec un statut 201 et un message
-        return res.status(201).json({ message: "Sauce added successfully", sauce: savedSauce });
+          // Renvoyer une réponse réussie avec un statut 201 et un message
+          return res
+              .status(201)
+              .json({ message: 'Sauce added successfully', sauce: savedSauce });
       })
       .catch((error) => {
-        console.error(error);
-        return res.status(500).json({ error: "Internal server error" });
+          console.error(error);
+          return res.status(500).json({ error: 'Internal server error' });
       });
 }
+
 
 // Function Method PUT
 async function updateSauce(req, res) {
@@ -117,6 +119,7 @@ async function updateSauce(req, res) {
         (req.body.description && !isStringWithNoNumbers(req.body.description)) ||
         (req.body.mainPepper && !isStringWithNoNumbers(req.body.mainPepper))
       ) {
+        //fs.unlinkSync(`images/${req.file.filename}`);
         return res.status(400).json({ message: 'Veuillez entrez une chaine de caractére' });
       }
 
