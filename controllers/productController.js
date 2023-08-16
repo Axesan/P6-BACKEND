@@ -34,6 +34,15 @@ async function saucesById(req, res) {
     }
 }
 
+
+// Fonction pour vérifier une chaîne de caractères sans entiers
+function isStringWithNoNumbers(inputString) {
+  return /^[^\d]+$/.test(inputString);
+}
+
+// ...
+
+
 // Function method Post
 async function addSauces(req, res) {
     // Récupérer les données de la sauce depuis le corps de la requête
@@ -42,6 +51,18 @@ async function addSauces(req, res) {
     const token = req.headers.authorization.split(' ')[1]; 
     const decodedToken = jwt.verify(token, process.env.TOKEN_USER);
     const userId = decodedToken.userId;
+
+    
+ // Vérification des champs sans entier - MAJ - Soutenance
+ if (
+  !isStringWithNoNumbers(sauceData.name) ||
+  !isStringWithNoNumbers(sauceData.manufacturer) ||
+  !isStringWithNoNumbers(sauceData.description) ||
+  !isStringWithNoNumbers(sauceData.mainPepper)
+) {
+  return res.status(400).json({ message: 'Veuillez entrez une chaine de caractére' });
+}
+ 
    
     // Créer une nouvelle instance de Sauce en utilisant le modèle Mongoose
     const newSauce = new Sauce({
@@ -57,6 +78,8 @@ async function addSauces(req, res) {
       usersLiked: [], // Nouvelle sauce, donc initialiser les usersLiked à un tableau vide
       usersDisliked: [] // Nouvelle sauce, donc initialiser les usersDisliked à un tableau vide
     });
+
+
   
     // Enregistrer la nouvelle sauce dans la base de données
    await newSauce.save()
@@ -87,6 +110,15 @@ async function updateSauce(req, res) {
         });
       }
     }
+       // Vérification des champs sans entier - MAJ - Soutenance 
+       if (
+        (req.body.name && !isStringWithNoNumbers(req.body.name)) ||
+        (req.body.manufacturer && !isStringWithNoNumbers(req.body.manufacturer)) ||
+        (req.body.description && !isStringWithNoNumbers(req.body.description)) ||
+        (req.body.mainPepper && !isStringWithNoNumbers(req.body.mainPepper))
+      ) {
+        return res.status(400).json({ error: 'Invalid input for text fields' });
+      }
 
     // L'objet qui va être envoyé dans la base de données
     let sauceObject;
